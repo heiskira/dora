@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DORA | Student Dashboard</title>
+  <style>
+    :root{
+      --blue:#0056d6;
+      --yellow:#ffcc00;
+      --bg:#f5f9ff;
+      --text:#222;
+      --card:#ffffff;
+      --muted:#eef4ff;
+      --shadow:0 4px 12px rgba(0,0,0,.08);
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+      background:var(--bg); color:var(--text); display:flex; min-height:100vh;
+      transition:background .25s,color .25s;
+    }
+    /* Dark mode */
+    body.dark{
+      --bg:#1e2233; --text:#f2f4f8; --card:#2a2f45; --muted:#323a56; --shadow:0 6px 16px rgba(0,0,0,.35);
+    }
+
+    /* Layout */
+    .sidebar{
+      width:340px; background:var(--card); box-shadow:var(--shadow); display:flex; flex-direction:column;
+      border-left:4px solid var(--yellow);
+      position:relative; z-index:2;
+    }
+    .main{flex:1; padding:1.25rem 1.25rem 2rem; overflow-y:auto; min-width:0;}
+
+    /* Header */
+    .header{display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1rem;}
+    .brand{font-size:1.6rem; font-weight:700; letter-spacing:.3px; color:var(--blue)}
+    .sub{opacity:.8; font-size:.95rem}
+    .right-head{display:flex; align-items:center; gap:.5rem}
+    .badge{font-weight:700; color:var(--blue)}
+    .toggle, .menu{
+      border:none; background:var(--blue); color:#fff; padding:.45rem .7rem; border-radius:8px; cursor:pointer; font-weight:600;
+    }
+    .menu{display:none;}
+
+    /* Banner */
+    .banner{background:var(--yellow); color:#000; padding:.65rem 1rem; border-radius:10px; margin-bottom:1rem; font-weight:600; box-shadow:var(--shadow);}
+
+    /* Analytics */
+    .stats{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem; margin-bottom:1rem;}
+    .card{background:var(--card); border-radius:14px; box-shadow:var(--shadow); padding:1rem;}
+    .stat-title{font-size:.85rem; opacity:.8; margin-bottom:.35rem}
+    .stat-value{font-size:1.4rem; font-weight:800; color:var(--blue)}
+
+    /* Controls */
+    .controls{display:flex; gap:.75rem; flex-wrap:wrap; margin:1rem 0;}
+    .controls input[type="text"], .controls select{
+      padding:.65rem .9rem; border:2px solid var(--blue); background:#fff; border-radius:10px; min-width:220px;
+      outline:none;
+    }
+    body.dark .controls input[type="text"], body.dark .controls select{background:#fff; color:#000;}
+
+    .filter label{display:flex; align-items:center; gap:.4rem; padding:.5rem .8rem; background:var(--muted); border-radius:10px;}
+
+    /* Categories */
+    .categories{display:flex; gap:.6rem; flex-wrap:wrap; margin: .25rem 0 1rem}
+    .cat{border:none; padding:.5rem 1rem; border-radius:10px; background:#e6f0ff; color:var(--blue); cursor:pointer; font-weight:600}
+    .cat.active{background:var(--blue); color:#fff}
+    .cat:hover{background:var(--yellow); color:#000}
+
+    /* Products */
+    .products{display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:1rem}
+    .product{background:var(--card); border-radius:14px; overflow:hidden; box-shadow:var(--shadow); display:flex; flex-direction:column; border-top:4px solid var(--yellow); transition:transform .2s}
+    .product:hover{transform:translateY(-3px)}
+    .p-img{width:100%; height:140px; background:var(--muted)}
+    .p-body{padding:.9rem; display:flex; flex-direction:column; gap:.55rem}
+    .p-title{font-weight:700; color:var(--blue)}
+    .p-price{font-weight:800; color:var(--yellow)}
+    .p-actions{display:flex; justify-content:space-between; align-items:center; gap:.5rem}
+    .btn{border:none; padding:.55rem .8rem; border-radius:10px; cursor:pointer; font-weight:700}
+    .btn-primary{background:var(--blue); color:#fff}
+    .btn-primary:hover{opacity:.92}
+    .btn-ghost{background:transparent; color:var(--yellow); font-size:1.1rem}
+
+    /* Sidebar tabs */
+    .tabs{display:flex}
+    .tab-btn{flex:1; padding:.8rem; border:none; cursor:pointer; font-weight:800; background:var(--muted); color:var(--blue)}
+    .tab-btn.active{background:var(--blue); color:#fff}
+    .tab-content{padding:1rem; overflow:auto; height:calc(100vh - 48px)}
+
+    /* Cart */
+    .cart-items{display:flex; flex-direction:column; gap:.5rem; margin-bottom:.75rem}
+    .cart-row{display:flex; justify-content:space-between; align-items:center; background:var(--muted); padding:.55rem .6rem; border-radius:10px}
+    .cart-controls button{margin:0 2px; padding:.25rem .5rem; border:none; border-radius:6px; cursor:pointer; background:#fff;}
+    body.dark .cart-controls button{background:#fff; color:#000;}
+    .cart-actions .btn{width:100%; margin-top:.5rem}
+    .small{text-align:right; font-size:.9rem; opacity:.8; margin-top:.25rem}
+
+    /* Profile */
+    .profile input{width:100%; padding:.65rem .8rem; border:1px solid #ccc; border-radius:10px; margin-bottom:.7rem; background:#fff}
+    body.dark .profile input{background:#fff; color:#000;}
+    .save{background:var(--blue); color:#fff}
+
+    /* History + tracker */
+    .order{background:var(--muted); padding:.7rem .8rem; border-radius:10px; margin-bottom:.6rem}
+    .order-head{display:flex; justify-content:space-between; font-weight:700; color:var(--blue)}
+    .timeline{display:flex; gap:.4rem; margin-top:.5rem}
+    .step{flex:1; height:8px; border-radius:6px; background:#c9d8ff; position:relative}
+    .step.done{background:var(--blue)}
+    .step::after{content:""; position:absolute; top:-6px; right:-2px; width:4px; height:20px}
+
+    /* Wishlist list */
+    .wl-item{display:flex; justify-content:space-between; align-items:center; background:var(--muted); padding:.55rem .6rem; border-radius:10px; margin-bottom:.5rem}
+
+    /* Modals */
+    .overlay{position:fixed; inset:0; background:rgba(0,0,0,.45); display:none; align-items:center; justify-content:center; z-index:10}
+    .modal{width:min(520px,92vw); background:var(--card); color:var(--text); border-radius:14px; box-shadow:var(--shadow); padding:1rem}
+    .modal h3{margin-bottom:.75rem; color:var(--blue)}
+    .modal .row{display:flex; gap:.6rem; margin:.4rem 0; align-items:center}
+    .modal .row input[type="text"]{flex:1; padding:.6rem .8rem; border:1px solid #ccc; border-radius:10px; background:#fff}
+    .modal .actions{display:flex; gap:.6rem; justify-content:flex-end; margin-top:1rem}
+    .btn-secondary{background:var(--yellow); color:#000}
+    .btn-outline{background:transparent; border:2px solid var(--blue); color:var(--blue)}
+
+    /* Help */
+    .help-list li{margin:.4rem 0; line-height:1.4}
+
+    /* Responsive */
+    @media (max-width: 980px){
+      .stats{grid-template-columns:1fr 1fr}
+      .sidebar{position:fixed; right:0; top:0; bottom:0; transform:translateX(110%); transition:transform .25s}
+      .sidebar.open{transform:translateX(0)}
+      .menu{display:inline-block}
+      .tab-content{height:calc(100vh - 48px)}
+    }
+    @media (max-width: 620px){
+      .stats{grid-template-columns:1fr}
+      .controls input[type="text"], .controls select{min-width:unset; width:100%}
+    }
+  </style>
+</head>
+<body>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="header">
+      <div>
+        <div class="brand">DORA</div>
+        <div class="sub">Campus mall → hostel delivery</div>
+      </div>
+      <div class="right-head">
+        <span id="cart-badge" class="badge">Cart (0)</span>
+        <button class="toggle" id="darkToggle">Dark</button>
+        <button class="menu" id="menuBtn">Menu</button>
+        <button class="toggle" id="helpBtn" title="Help & FAQ">Help</button>
+      </div>
+    </div>
+
+    <div class="banner">Free delivery for Hostel A & B today</div>
+
+    <!-- Analytics -->
+    <div class="stats">
+      <div class="card">
+        <div class="stat-title">Spend this month</div>
+        <div class="stat-value" id="stat-spend">₦0</div>
+      </div>
+      <div class="card">
+        <div class="stat-title">Orders this month</div>
+        <div class="stat-value" id="stat-orders">0</div>
+      </div>
+      <div class="card">
+        <div class="stat-title">Most ordered</div>
+        <div class="stat-value" id="stat-top">—</div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <input type="text" id="search" placeholder="Search for items..."/>
+      <select id="sort">
+        <option value="">Sort by</option>
+        <option value="low">Price: Low → High</option>
+        <option value="high">Price: High → Low</option>
+      </select>
+      <div class="filter">
+        <label>
+          <input type="checkbox" id="inStock"/> In Stock Only
+        </label>
+      </div>
+    </div>
+
+    <!-- Categories -->
+    <div class="categories" id="cats">
+      <button class="cat active" data-cat="all">All</button>
+      <button class="cat" data-cat="food">Food</button>
+      <button class="cat" data-cat="drinks">Drinks</button>
+      <button class="cat" data-cat="stationery">Stationery</button>
+      <button class="cat" data-cat="others">Others</button>
+    </div>
+
+    <!-- Products -->
+    <div class="products" id="products"></div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="cart">Cart</button>
+      <button class="tab-btn" data-tab="wishlist">Wishlist</button>
+      <button class="tab-btn" data-tab="profile">Profile</button>
+      <button class="tab-btn" data-tab="history">History</button>
+    </div>
+
+    <!-- Cart -->
+    <div class="tab-content" id="tab-cart">
+      <h3 style="color:var(--blue); margin-bottom:.6rem">Your Cart</h3>
+      <div class="cart-items" id="cart-items"><div class="small">No items yet.</div></div>
+      <div class="cart-actions">
+        <button class="btn btn-primary" id="checkoutBtn">Checkout</button>
+        <button class="btn btn-secondary" id="clearCartBtn">Clear Cart</button>
+      </div>
+      <div class="small" id="cart-total">Total: ₦0</div>
+    </div>
+
+    <!-- Wishlist -->
+    <div class="tab-content" id="tab-wishlist" style="display:none">
+      <h3 style="color:var(--blue); margin-bottom:.6rem">Wishlist</h3>
+      <div id="wishlistList"></div>
+      <button class="btn btn-primary" id="addAllWishlist" style="width:100%; margin-top:.5rem">Add All to Cart</button>
+    </div>
+
+    <!-- Profile -->
+    <div class="tab-content" id="tab-profile" style="display:none">
+      <h3 style="color:var(--blue); margin-bottom:.6rem">Profile</h3>
+      <div class="profile">
+        <input id="studentName" placeholder="Student Name"/>
+        <input id="matric" placeholder="Matric Number"/>
+        <input id="hostel" placeholder="Hostel / Room"/>
+        <button class="btn save" id="saveProfile">Save Profile</button>
+      </div>
+    </div>
+
+    <!-- History -->
+    <div class="tab-content" id="tab-history" style="display:none">
+      <h3 style="color:var(--blue); margin-bottom:.6rem">Order History</h3>
+      <div id="history"></div>
+    </div>
+  </aside>
+
+  <!-- CHECKOUT MODAL -->
+  <div class="overlay" id="checkoutModal">
+    <div class="modal">
+      <h3>Checkout</h3>
+      <div class="row"><strong>Total:</strong> <span id="coTotal">₦0</span></div>
+      <div class="row">
+        <strong>Payment:</strong>
+        <label><input type="radio" name="pay" value="cod" checked/> Cash on Delivery</label>
+        <label><input type="radio" name="pay" value="wallet"/> Wallet</label>
+        <label><input type="radio" name="pay" value="card"/> Card</label>
+      </div>
+      <div class="row">
+        <input id="coNote" type="text" placeholder="Delivery note (optional)"/>
+      </div>
+      <div class="actions">
+        <button class="btn btn-outline" id="cancelCheckout">Cancel</button>
+        <button class="btn btn-primary" id="confirmCheckout">Confirm Order</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HELP MODAL -->
+  <div class="overlay" id="helpModal">
+    <div class="modal">
+      <h3>Help & FAQ</h3>
+      <ul class="help-list">
+        <li><strong>How long is delivery?</strong> Typically under 30–45 minutes, depending on hostel.</li>
+        <li><strong>Payment methods?</strong> Cash on delivery, wallet, or card (demo).</li>
+        <li><strong>Change hostel?</strong> Update it under Profile before checkout.</li>
+        <li><strong>Out of stock?</strong> Use the “In Stock Only” filter when browsing.</li>
+      </ul>
+      <div class="actions">
+        <button class="btn btn-primary" id="closeHelp">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ---------- Data & Storage ---------- */
+    const LS = {
+      cart: 'cart', history: 'history', profile: 'profile', wishlist:'wishlist', theme:'theme'
+    };
+    let cart = JSON.parse(localStorage.getItem(LS.cart) || '[]');
+    let historyData = JSON.parse(localStorage.getItem(LS.history) || '[]');
+    let profile = JSON.parse(localStorage.getItem(LS.profile) || '{}');
+    let wishlist = JSON.parse(localStorage.getItem(LS.wishlist) || '[]');
+
+    const productsList = [
+      {name:"Indomie Noodles",price:500,category:"food",stock:true},
+      {name:"Bottle Water (1.5L)",price:300,category:"drinks",stock:true},
+      {name:"Bread (Loaf)",price:800,category:"food",stock:false},
+      {name:"Stationery Pack",price:1200,category:"stationery",stock:true},
+      {name:"Laundry Soap",price:400,category:"others",stock:true},
+      {name:"Chin Chin",price:700,category:"food",stock:true},
+      {name:"Energy Drink",price:1000,category:"drinks",stock:true}
+    ];
+
+    /* ---------- Elements ---------- */
+    const $ = (s, d=document)=>d.querySelector(s);
+    const $$ = (s, d=document)=>Array.from(d.querySelectorAll(s));
+    const productsEl = $("#products");
+    const cartItemsEl = $("#cart-items");
+    const cartTotalEl = $("#cart-total");
+    const badgeEl = $("#cart-badge");
+    const historyEl = $("#history");
+    const wishlistEl = $("#wishlistList");
+    const statSpendEl = $("#stat-spend");
+    const statOrdersEl = $("#stat-orders");
+    const statTopEl = $("#stat-top");
+    const sidebarEl = $("#sidebar");
+    const menuBtn = $("#menuBtn");
+
+    /* ---------- Rendering ---------- */
+    function renderProducts(list=productsList){
+      const val = $("#search").value.trim().toLowerCase();
+      const stockOnly = $("#inStock").checked;
+      let filtered = list.filter(p =>
+        p.name.toLowerCase().includes(val) && (!stockOnly || p.stock)
+      );
+
+      const sortVal = $("#sort").value;
+      if(sortVal==='low') filtered.sort((a,b)=>a.price-b.price);
+      if(sortVal==='high') filtered.sort((a,b)=>b.price-a.price);
+
+      productsEl.innerHTML = '';
+      filtered.forEach(p=>{
+        const card = document.createElement('div');
+        card.className='product';
+        card.setAttribute('data-category', p.category);
+        card.innerHTML = `
+          <div class="p-img"></div>
+          <div class="p-body">
+            <div class="p-title">${p.name}</div>
+            <div class="p-price">₦${p.price}</div>
+            <div class="p-actions">
+              <button class="btn btn-primary" data-add='${p.name}'>Add</button>
+              <button class="btn btn-ghost" title="Toggle wishlist" data-wish='${p.name}'>${wishlist.includes(p.name) ? '★' : '☆'}</button>
+            </div>
+          </div>`;
+        productsEl.appendChild(card);
+      });
+    }
+
+    function saveCart(){localStorage.setItem(LS.cart, JSON.stringify(cart));}
+    function saveHistory(){localStorage.setItem(LS.history, JSON.stringify(historyData));}
+    function saveProfile(){localStorage.setItem(LS.profile, JSON.stringify(profile));}
+    function saveWishlist(){localStorage.setItem(LS.wishlist, JSON.stringify(wishlist));}
+
+    function renderCart(){
+      cartItemsEl.innerHTML = '';
+      if(cart.length===0){
+        cartItemsEl.innerHTML = '<div class="small">No items yet.</div>';
+        cartTotalEl.textContent = 'Total: ₦0';
+        badgeEl.textContent = 'Cart (0)';
+        return;
+      }
+      let total = 0, count=0;
+      cart.forEach((it, idx)=>{
+        total += it.price * it.quantity;
+        count += it.quantity;
+        const row = document.createElement('div');
+        row.className='cart-row';
+        row.innerHTML = `
+          <div>${it.product} ×${it.quantity} — ₦${it.price * it.quantity}</div>
+          <div class="cart-controls">
+            <button data-q="-1" data-idx="${idx}">-</button>
+            <button data-q="+1" data-idx="${idx}">+</button>
+            <button data-rm="${idx}">✖</button>
+          </div>`;
+        cartItemsEl.appendChild(row);
+      });
+      cartTotalEl.textContent = 'Total: ₦' + total;
+      badgeEl.textContent = `Cart (${count})`;
+    }
+
+    function renderHistory(){
+      historyEl.innerHTML = '';
+      if(historyData.length===0){historyEl.innerHTML='<div class="small">No past orders.</div>'; return;}
+      historyData.slice().reverse().forEach(order=>{
+        const steps = ["Confirmed","Packed","Out for Delivery","Delivered"];
+        const wrap = document.createElement('div');
+        wrap.className='order';
+        const progress = steps.map((_,i)=>`<div class="step ${i<=order.statusIndex?'done':''}"></div>`).join('');
+        const itemsStr = order.items.map(i=>`${i.product}×${i.quantity}`).join(', ');
+        wrap.innerHTML = `
+          <div class="order-head"><div>${order.date}</div><div>${steps[order.statusIndex]}</div></div>
+          <div style="margin:.35rem 0 .4rem; font-size:.95rem">${itemsStr} — Total ₦${order.total}</div>
+          <div class="timeline">${progress}</div>`;
+        historyEl.appendChild(wrap);
+      });
+      updateAnalytics();
+    }
+
+    function renderWishlist(){
+      wishlistEl.innerHTML = '';
+      if(wishlist.length===0){wishlistEl.innerHTML='<div class="small">No items yet.</div>'; return;}
+      wishlist.forEach(name=>{
+        const p = productsList.find(x=>x.name===name);
+        const row = document.createElement('div');
+        row.className='wl-item';
+        row.innerHTML = `<div>${name} — ₦${p?.price ?? '-'}</div>
+          <div>
+            <button class="btn btn-primary" data-add='${name}'>Add</button>
+            <button class="btn btn-secondary" data-unwish='${name}'>Remove</button>
+          </div>`;
+        wishlistEl.appendChild(row);
+      });
+    }
+
+    /* ---------- Analytics ---------- */
+    function updateAnalytics(){
+      const now = new Date();
+      const ym = (d)=> `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+      const curKey = ym(now);
+      let spend = 0, orders = 0, counts = {};
+      historyData.forEach(o=>{
+        const od = new Date(o.date);
+        if(ym(od)===curKey){
+          spend += o.total;
+          orders += 1;
+        }
+        o.items.forEach(i=>{
+          counts[i.product] = (counts[i.product]||0) + i.quantity;
+        });
+      });
+      statSpendEl.textContent = '₦' + spend;
+      statOrdersEl.textContent = orders;
+      let top = '—', max=0;
+      Object.entries(counts).forEach(([k,v])=>{ if(v>max){max=v; top=k;} });
+      statTopEl.textContent = top;
+    }
+
+    /* ---------- Cart Ops ---------- */
+    function addToCart(name){
+      const p = productsList.find(x=>x.name===name);
+      if(!p) return;
+      const ex = cart.find(x=>x.product===name);
+      if(ex) ex.quantity += 1;
+      else cart.push({product:name, price:p.price, quantity:1});
+      saveCart(); renderCart();
+    }
+    function changeQty(idx, delta){
+      cart[idx].quantity += delta;
+      if(cart[idx].quantity<=0) cart.splice(idx,1);
+      saveCart(); renderCart();
+    }
+    function removeItem(idx){ cart.splice(idx,1); saveCart(); renderCart(); }
+    function clearCart(){ cart=[]; saveCart(); renderCart(); }
+
+    /* ---------- Checkout & Order Flow ---------- */
+    const checkoutModal = $("#checkoutModal");
+    $("#checkoutBtn").addEventListener('click', ()=>{
+      if(cart.length===0) return alert("Cart is empty.");
+      $("#coTotal").textContent = '₦' + cart.reduce((s,i)=>s+i.price*i.quantity,0);
+      checkoutModal.style.display='flex';
+    });
+    $("#cancelCheckout").addEventListener('click', ()=> checkoutModal.style.display='none');
+
+    $("#confirmCheckout").addEventListener('click', ()=>{
+      const total = cart.reduce((s,i)=>s+i.price*i.quantity,0);
+      const order = {
+        id: Date.now(),
+        date: new Date().toLocaleString(),
+        items: JSON.parse(JSON.stringify(cart)),
+        total,
+        statusIndex: 0, // Confirmed
+      };
+      historyData.push(order);
+      saveHistory();
+      // reset cart
+      cart=[]; saveCart(); renderCart(); renderHistory();
+      checkoutModal.style.display='none';
+      // auto progress status
+      scheduleOrderProgress(order.id);
+      alert("Order placed. You can track progress in History.");
+    });
+
+    // Progress order status over time (demo: every 6s)
+    function scheduleOrderProgress(orderId){
+      const interval = 6000; // 6 seconds per step (adjust as needed)
+      let t = 0;
+      const timer = setInterval(()=>{
+        const ord = historyData.find(o=>o.id===orderId);
+        if(!ord){clearInterval(timer); return;}
+        if(ord.statusIndex < 3){
+          ord.statusIndex += 1;
+          saveHistory();
+          renderHistory();
+        }
+        if(ord.statusIndex===3){ clearInterval(timer); }
+      }, interval);
+    }
+
+    // Resume timers for unfinished orders on reload (simulate continuation)
+    function resumeProgressForPending(){
+      historyData.forEach(o=>{
+        if(o.statusIndex<3) scheduleOrderProgress(o.id);
+      });
+    }
+
+    /* ---------- Tabs ---------- */
+    $$(".tab-btn").forEach(b=>{
+      b.addEventListener('click', ()=>{
+        $$(".tab-btn").forEach(x=>x.classList.remove('active'));
+        b.classList.add('active');
+        const tab = b.dataset.tab;
+        $$(".tab-content").forEach(c=>c.style.display='none');
+        $("#tab-"+tab).style.display='block';
+      });
+    });
+
+    /* ---------- Category buttons ---------- */
+    $("#cats").addEventListener('click', (e)=>{
+      const btn = e.target.closest('.cat'); if(!btn) return;
+      $$(".cat").forEach(x=>x.classList.remove('active')); btn.classList.add('active');
+      const cat = btn.dataset.cat;
+      const list = cat==='all'? productsList : productsList.filter(p=>p.category===cat);
+      renderProducts(list);
+    });
+
+    /* ---------- Products events (add / wish) ---------- */
+    productsEl.addEventListener('click', (e)=>{
+      const add = e.target.closest('[data-add]'); if(add){ addToCart(add.dataset.add); return; }
+      const wish = e.target.closest('[data-wish]');
+      if(wish){
+        const name = wish.dataset.wish;
+        if(wishlist.includes(name)) wishlist = wishlist.filter(x=>x!==name);
+        else wishlist.push(name);
+        saveWishlist(); renderProducts(); renderWishlist();
+      }
+    });
+
+    /* ---------- Cart buttons ---------- */
+    cartItemsEl.addEventListener('click', (e)=>{
+      const q = e.target.getAttribute('data-q');
+      if(q){
+        const idx = +e.target.getAttribute('data-idx');
+        changeQty(idx, q==='+1'?1:-1);
+      }
+      const rm = e.target.getAttribute('data-rm');
+      if(rm){ removeItem(+rm); }
+    });
+    $("#clearCartBtn").addEventListener('click', clearCart);
+
+    /* ---------- Wishlist actions ---------- */
+    $("#addAllWishlist").addEventListener('click', ()=>{
+      wishlist.forEach(n=>addToCart(n));
+    });
+    wishlistEl.addEventListener('click', (e)=>{
+      const unw = e.target.getAttribute('data-unwish');
+      if(unw){
+        wishlist = wishlist.filter(x=>x!==unw);
+        saveWishlist(); renderProducts(); renderWishlist();
+      }
+      const add = e.target.getAttribute('data-add');
+      if(add){ addToCart(add); }
+    });
+
+    /* ---------- Search / Sort / Stock ---------- */
+    $("#search").addEventListener('input', ()=>renderProducts());
+    $("#sort").addEventListener('change', ()=>renderProducts());
+    $("#inStock").addEventListener('change', ()=>renderProducts());
+
+    /* ---------- Profile ---------- */
+    $("#saveProfile").addEventListener('click', ()=>{
+      profile = {
+        name: $("#studentName").value.trim(),
+        matric: $("#matric").value.trim(),
+        hostel: $("#hostel").value.trim(),
+      };
+      saveProfile();
+      alert("Profile saved.");
+    });
+    function loadProfile(){
+      if(profile.name) $("#studentName").value = profile.name;
+      if(profile.matric) $("#matric").value = profile.matric;
+      if(profile.hostel) $("#hostel").value = profile.hostel;
+    }
+
+    /* ---------- Dark mode (persist) ---------- */
+    function applyTheme(){
+      const mode = localStorage.getItem(LS.theme) || 'light';
+      document.body.classList.toggle('dark', mode==='dark');
+      $("#darkToggle").textContent = mode==='dark' ? 'Light' : 'Dark';
+    }
+    $("#darkToggle").addEventListener('click', ()=>{
+      const isDark = document.body.classList.toggle('dark');
+      localStorage.setItem(LS.theme, isDark?'dark':'light');
+      $("#darkToggle").textContent = isDark ? 'Light' : 'Dark';
+    });
+
+    /* ---------- Sidebar responsive ---------- */
+    menuBtn.addEventListener('click', ()=> sidebarEl.classList.toggle('open'));
+
+    /* ---------- Help modal ---------- */
+    const helpModal = $("#helpModal");
+    $("#helpBtn").addEventListener('click', ()=> helpModal.style.display='flex');
+    $("#closeHelp").addEventListener('click', ()=> helpModal.style.display='none');
+    helpModal.addEventListener('click', e=>{ if(e.target===helpModal) helpModal.style.display='none'; });
+
+    /* ---------- Close modals when clicking backdrop ---------- */
+    checkoutModal.addEventListener('click', (e)=>{ if(e.target===checkoutModal) checkoutModal.style.display='none'; });
+
+    /* ---------- Init ---------- */
+    function init(){
+      applyTheme();
+      loadProfile();
+      renderProducts();
+      renderCart();
+      renderHistory();
+      renderWishlist();
+      resumeProgressForPending();
+    }
+    init();
+  </script>
+</body>
+</html>
